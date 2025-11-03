@@ -1,5 +1,11 @@
 import type { TogglWorkspace } from "../model/TogglWorkspace";
 
+export interface ReducedPolling {
+  manualMode: boolean;         // user triggers refresh; no background polling
+  pollOnlyWhenActive: boolean; // only poll if a timer is running OR panel open
+  pollIntervalMs: number;      // 15000 = 15s
+}
+
 export interface PluginSettings {
   /**
    * The user's Toggl Track API token.
@@ -38,4 +44,6 @@ export interface PluginSettings {
 
   /** Message shown in the status bar when no time entry is running. */
   statusBarNoEntryMesssage?: string;
+
+  reducedPolling: ReducedPolling;
 }
