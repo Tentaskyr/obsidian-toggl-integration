@@ -9,4 +9,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   statusBarShowProject: false,
   updateInRealTime: true,
   workspace: { id: "none", name: "None selected" },
+  reducedPolling: {
+	  manualmode: false,
+	  pollOnlyWhenActive: true,
+	  pollIntervalMs: 15000,
+  },
 };
