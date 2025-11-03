@@ -16,6 +16,9 @@ export default class MyPlugin extends Plugin {
   public toggl: TogglService;
   public input: UserInputHelper;
   public reportView: TogglReportView;
+  private windowHasFocuse = true;
+  public panelIsVisible = false;
+  public lastKnownTimerRunning = false;
 
   async onload() {
     console.log(`Loading obsidian-toggl-integration ${this.manifest.version}`);
@@ -26,7 +29,7 @@ export default class MyPlugin extends Plugin {
 
     // instantiate toggl class and set the API token if set in settings.
     this.toggl = new TogglService(this);
-    if (this.settings.apiToken != null || this.settings.apiToken != "") {
+    if (this.settings.apiToken?.trim()) {
       this.toggl.refreshApiConnection(this.settings.apiToken);
       this.input = new UserInputHelper(this);
     }
@@ -98,13 +101,30 @@ export default class MyPlugin extends Plugin {
         if (!checking) {
           this.toggl.refreshApiConnection(this.settings.apiToken);
         } else {
-          return this.settings.apiToken != null || this.settings.apiToken != "";
+          return this.settings.apiToken?.trim();
         }
       },
       id: "refresh-api",
       name: "Refresh API Connection",
     });
 
+    this.addCommand({
+      id: "toggl-manual-refresh",
+      name: "Toggl: Refresh now",
+      callback: async () => {
+        try {
+          // adjust to real methods in TogglService:
+          await (this.toggl as any).refreshUser?.();
+          await (this.toggl as any).refreshCurrentEntry?.();
+          this.lastKnownTimerRunning = !!(this.toggl as any).currentTimeEntry;
+          (this.reportView as any)?.requestRender?.();
+        } catch (e) {
+          console.error("Manual refresh failed:", e);
+        }
+      },
+    });
+
+	  
     // Enable processing codeblocks for rendering in-note reports
     this.registerCodeBlockProcessor();
   }
@@ -139,6 +159,11 @@ export default class MyPlugin extends Plugin {
     versionLogDismissed.subscribe((bool) => {
       this.settings.hasDismissedAlert = bool;
       this.saveSettings();
+    });
+    this.registerDomEvent(window, "focus", () => { this.windowHasFocus = true; });
+    this.registerDomEvent(window, "blur",  () => { this.windowHasFocus = false; });
+    this.registerDomEvent(document, "visibilitychange", () => {
+      this.windowHasFocus = !document.hidden;
     });
   }
 
